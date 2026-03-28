@@ -1,0 +1,77 @@
+.editor-layout {
+  display: flex;
+  height: 100%;
+  gap: 0;
+}
+
+.editor-sidebar {
+  width: 220px;
+  min-width: 220px;
+  background: #16213e;
+  border-right: 1px solid #0f3460;
+  padding: 1.5rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+}
+
+.editor-sidebar h2 {
+  font-size: 1.1rem;
+  color: #e94560;
+  margin-bottom: 0.5rem;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.form-group label {
+  font-size: 0.8rem;
+  color: #a0a0b0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.form-group select {
+  background: #0f3460;
+  color: #e0e0e0;
+  border: 1px solid #1a4080;
+  border-radius: 6px;
+  padding: 0.5rem;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.preset-info {
+  font-size: 0.85rem;
+  color: #888;
+}
+
+.btn-export {
+  background: #e94560;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 0.7rem 1rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+  margin-top: auto;
+}
+
+.btn-export:hover {
+  background: #c73652;
+}
+
+.editor-canvas-area {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #12121f;
+  overflow: auto;
+  padding: 1rem;
+}
