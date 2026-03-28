@@ -1,10 +1,10 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+use base64::{engine::general_purpose, Engine as _};
 use std::fs;
 use std::path::PathBuf;
 use tauri::api::path::app_data_dir;
-use base64::{engine::general_purpose, Engine as _};
 
 /// Returns the workspace path and ensures subdirectories exist.
 #[tauri::command]
@@ -18,8 +18,7 @@ fn get_workspace_path(app_handle: tauri::AppHandle) -> Result<String, String> {
     // Create subdirectories
     for sub in &["images", "exports", "templates"] {
         let dir = workspace.join(sub);
-        fs::create_dir_all(&dir)
-            .map_err(|e| format!("Error creando directorio {}: {}", sub, e))?;
+        fs::create_dir_all(&dir).map_err(|e| format!("Error creando directorio {}: {}", sub, e))?;
     }
 
     Ok(workspace.to_string_lossy().to_string())
@@ -55,8 +54,7 @@ fn save_export(
         .decode(b64)
         .map_err(|e| format!("Error decodificando base64: {}", e))?;
 
-    fs::write(&out_path, &bytes)
-        .map_err(|e| format!("Error escribiendo archivo: {}", e))?;
+    fs::write(&out_path, &bytes).map_err(|e| format!("Error escribiendo archivo: {}", e))?;
 
     Ok(out_path.to_string_lossy().to_string())
 }
