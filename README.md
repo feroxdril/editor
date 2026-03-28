@@ -57,15 +57,48 @@ editor-paquetes/
 | `story`        | 1080 × 1920   | Stories de Instagram/FB    |
 | `whatsapp_4_5` | 1080 × 1350   | WhatsApp vertical (4:5)    |
 
-## Workspace local
+## Catálogo de productos
 
-La app guarda datos en el directorio de datos de la aplicación:
-- `images/` – catálogo de imágenes de productos
-- `exports/` – exportaciones PNG/JPG
+La vista **Catálogo** permite importar imágenes de productos, organizarlas por categoría y buscarlas rápidamente.
+
+### Cómo importar imágenes
+
+1. Ve a **Catálogo** en la barra de navegación.
+2. Selecciona la **categoría** destino en el selector de la esquina superior derecha.
+3. Pulsa **"Importar imágenes"** y elige uno o varios archivos `.png` / `.jpg` / `.jpeg`.
+4. Las imágenes se copian automáticamente a `<workspace>/images/` y se registran en `<workspace>/catalog.json`.
+
+### Convención de nombre de archivo
+
+El parser extrae **código** y **nombre** del nombre del archivo usando el separador `+`:
+
+| Archivo                         | Código | Nombre             |
+|---------------------------------|--------|--------------------|
+| `206+dendur.png`                | `206`  | `dendur`           |
+| `392+desodorante ohm.png`       | `392`  | `desodorante ohm`  |
+| `logo_producto.png` (sin `+`)   | `pendiente` | `logo producto` |
+
+Reglas:
+- Todo antes del primer `+` → **código** (se hace trim).
+- Todo después del `+` hasta la extensión → **nombre** (se hace trim, `_` → espacio, espacios múltiples colapsados).
+- Sin `+`: código queda como `pendiente` y puede editarse después.
+
+### Dónde se guarda el workspace
+
+La app usa el directorio de datos de la aplicación del sistema operativo:
+
+| OS      | Ruta                                               |
+|---------|----------------------------------------------------|
+| Windows | `%APPDATA%\editor-paquetes\`                       |
+| macOS   | `~/Library/Application Support/editor-paquetes/`  |
+| Linux   | `~/.local/share/editor-paquetes/`                  |
+
+Dentro del workspace:
+- `images/` – imágenes importadas al catálogo
+- `catalog.json` – registro persistente del catálogo
+- `exports/` – exportaciones PNG/JPG generadas por el editor
 - `templates/` – plantillas (uso futuro)
 
-Para obtener la ruta del workspace desde el frontend:
-```ts
-import { invoke } from "@tauri-apps/api/tauri";
-const path = await invoke("get_workspace_path");
-```
+La ruta completa del workspace se muestra en gris debajo del encabezado de la vista Catálogo (útil para depuración).
+
+
