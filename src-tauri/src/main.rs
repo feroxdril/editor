@@ -250,6 +250,158 @@ fn delete_catalog_item(app_handle: tauri::AppHandle, id: String) -> Result<(), S
 }
 
 // ---------------------------------------------------------------------------
+// Project types
+// ---------------------------------------------------------------------------
+
+#[derive(Debug, Serialize, Deserialize, Clone, Default)]
+#[serde(rename_all = "camelCase")]
+struct OfferTexts {
+    title: String,
+    public_price: String,
+    pay_only: String,
+    offer_until: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+struct Page {
+    page_id: String,
+    name: String,
+    preset: String,
+    elements: serde_json::Value,
+    offer_texts: OfferTexts,
+    background: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+struct Project {
+    project_id: String,
+    name: String,
+    created_at: String,
+    updated_at: String,
+    default_preset: String,
+    pages: Vec<Page>,
+}
+
+// ---------------------------------------------------------------------------
+// Project helpers
+// ---------------------------------------------------------------------------
+
+fn projects_path(workspace: &PathBuf) -> PathBuf {
+    workspace.join("projects.json")
+}
+
+fn read_projects(workspace: &PathBuf) -> Vec<Project> {
+    let path = projects_path(workspace);
+    if !path.exists() {
+        return Vec::new();
+    }
+    fs::read_to_string(&path)
+        .ok()
+        .and_then(|s| serde_json::from_str(&s).ok())
+        .unwrap_or_default()
+}
+
+fn write_projects(workspace: &PathBuf, projects: &[Project]) -> Result<(), String> {
+    let path = projects_path(workspace);
+    let json = serde_json::to_string_pretty(projects)
+        .map_err(|e| format!("Error serializando proyectos: {}", e))?;
+    fs::write(&path, json).map_err(|e| format!("Error escribiendo projects.json: {}", e))
+}
+
+/// Validate that a relative path is safe to use within the workspace:
+/// - Rejects `..` (parent directory traversal).
+/// - Rejects absolute paths and drive-letter prefixes (Windows).
+/// - Only allows normal path components and the current-directory dot.
+/// This prevents callers from escaping the workspace directory.
+fn validate_relative_path(relative_path: &str) -> Result<(), String> {
+    let p = PathBuf::from(relative_path);
+    for component in p.components() {
+        match component {
+            std::path::Component::ParentDir
+            | std::path::Component::RootDir
+            | std::path::Component::Prefix(_) => {
+                return Err(format!(
+                    "Ruta inválida (path traversal): {}",
+                    relative_path
+                ));
+            }
+            _ => {}
+        }
+    }
+    Ok(())
+}
+
+// ---------------------------------------------------------------------------
+// Project commands
+// ---------------------------------------------------------------------------
+
+#[tauri::command]
+fn list_projects(app_handle: tauri::AppHandle) -> Result<Vec<Project>, String> {
+    let workspace_str = get_workspace_path(app_handle)?;
+    let workspace = PathBuf::from(&workspace_str);
+    Ok(read_projects(&workspace))
+}
+
+#[tauri::command]
+fn save_project(app_handle: tauri::AppHandle, project: Project) -> Result<(), String> {
+    let workspace_str = get_workspace_path(app_handle)?;
+    let workspace = PathBuf::from(&workspace_str);
+    let mut projects = read_projects(&workspace);
+    if let Some(pos) = projects
+        .iter()
+        .position(|p| p.project_id == project.project_id)
+    {
+        projects[pos] = project;
+    } else {
+        projects.push(project);
+    }
+    write_projects(&workspace, &projects)
+}
+
+#[tauri::command]
+fn delete_project(app_handle: tauri::AppHandle, project_id: String) -> Result<(), String> {
+    let workspace_str = get_workspace_path(app_handle)?;
+    let workspace = PathBuf::from(&workspace_str);
+    let mut projects = read_projects(&workspace);
+    let original_len = projects.len();
+    projects.retain(|p| p.project_id != project_id);
+    if projects.len() == original_len {
+        return Err(format!("Proyecto no encontrado: {}", project_id));
+    }
+    write_projects(&workspace, &projects)
+}
+
+/// Read an image from the workspace by relative path and return a base64 data URL.
+#[tauri::command]
+fn read_image_data_url(
+    app_handle: tauri::AppHandle,
+    relative_path: String,
+) -> Result<String, String> {
+    validate_relative_path(&relative_path)?;
+    let workspace_str = get_workspace_path(app_handle)?;
+    let workspace = PathBuf::from(&workspace_str);
+    let full_path = workspace.join(&relative_path);
+
+    let bytes =
+        fs::read(&full_path).map_err(|e| format!("Error leyendo imagen '{}': {}", relative_path, e))?;
+
+    let ext = full_path
+        .extension()
+        .unwrap_or_default()
+        .to_string_lossy()
+        .to_lowercase();
+    let mime = match ext.as_str() {
+        "jpg" | "jpeg" => "image/jpeg",
+        _ => "image/png",
+    };
+
+    let b64 = general_purpose::STANDARD.encode(&bytes);
+    Ok(format!("data:{};base64,{}", mime, b64))
+}
+
+// ---------------------------------------------------------------------------
 // Export command (unchanged)
 // ---------------------------------------------------------------------------
 
@@ -297,6 +449,10 @@ fn main() {
             list_catalog,
             update_catalog_item,
             delete_catalog_item,
+            list_projects,
+            save_project,
+            delete_project,
+            read_image_data_url,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
