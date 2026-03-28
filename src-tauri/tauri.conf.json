@@ -24,6 +24,15 @@
       },
       "path": {
         "all": true
+      },
+      "dialog": {
+        "all": false,
+        "open": true,
+        "save": true
+      },
+      "asset": {
+        "all": false,
+        "scope": ["$APPDATA/*", "$APPDATA/**"]
       }
     },
     "bundle": {
