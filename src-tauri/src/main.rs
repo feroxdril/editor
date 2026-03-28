@@ -310,7 +310,11 @@ fn write_projects(workspace: &PathBuf, projects: &[Project]) -> Result<(), Strin
     fs::write(&path, json).map_err(|e| format!("Error escribiendo projects.json: {}", e))
 }
 
-/// Validate a relative path (no traversal, no absolute paths).
+/// Validate that a relative path is safe to use within the workspace:
+/// - Rejects `..` (parent directory traversal).
+/// - Rejects absolute paths and drive-letter prefixes (Windows).
+/// - Only allows normal path components and the current-directory dot.
+/// This prevents callers from escaping the workspace directory.
 fn validate_relative_path(relative_path: &str) -> Result<(), String> {
     let p = PathBuf::from(relative_path);
     for component in p.components() {

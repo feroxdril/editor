@@ -25,7 +25,7 @@ import "./Editor.css";
 // Helpers
 // ---------------------------------------------------------------------------
 
-function genId(): string {
+function generateId(): string {
   return crypto.randomUUID();
 }
 
@@ -163,7 +163,7 @@ function buildOfferTextElements(
   return roles.map(({ role, default: defaultFn, defaultY, fontSize, fill, fontStyle }) => {
     const existing = existingTextEls.find((el) => el.role === role);
     return {
-      id: existing?.id ?? genId(),
+      id: existing?.id ?? generateId(),
       type: "text" as const,
       role,
       text: defaultFn(texts),
@@ -239,8 +239,8 @@ export default function Editor() {
   useEffect(() => {
     const loadAll = async () => {
       try {
-        const _ws = await invoke<string>("get_workspace_path");
-        void _ws; // ensure workspace dir is initialized
+        // Initialize workspace directories
+        await invoke("get_workspace_path");
         const cat = await invoke<CatalogItem[]>("list_catalog");
         setCatalog(cat);
 
@@ -281,6 +281,8 @@ export default function Editor() {
         .catch((err) => console.warn("Error loading image:", err));
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
+  // imageCache is intentionally excluded: including it would cause an infinite loop
+  // because setImageCache updates the cache, which would re-trigger loading
   }, [currentPage?.elements]);
 
   // -------------------------------------------------------------------------
@@ -380,7 +382,7 @@ export default function Editor() {
         if (!src) return els;
         const copy: CanvasElement = {
           ...cloneDeep(src),
-          id: genId(),
+          id: generateId(),
           x: src.x + 30,
           y: src.y + 30,
           zIndex: Math.max(...els.map((e) => e.zIndex), 0) + 1,
@@ -481,7 +483,7 @@ export default function Editor() {
       const imageElDefs = generateLayout(flatItems, totalCount, preset);
       const newImageEls: ImageElement[] = imageElDefs.map((def) => ({
         ...def,
-        id: genId(),
+        id: generateId(),
       }));
 
       // Load images for new elements
@@ -526,7 +528,7 @@ export default function Editor() {
     if (!project) return;
     const updated = cloneDeep(project);
     const newPage: Page = {
-      pageId: genId(),
+      pageId: generateId(),
       name: `Página ${updated.pages.length + 1}`,
       preset: project.defaultPreset,
       elements: [],
@@ -546,7 +548,7 @@ export default function Editor() {
     const updated = cloneDeep(project);
     const copy: Page = {
       ...cloneDeep(currentPage),
-      pageId: genId(),
+      pageId: generateId(),
       name: `${currentPage.name} (copia)`,
     };
     updated.pages.splice(pageIndex + 1, 0, copy);
